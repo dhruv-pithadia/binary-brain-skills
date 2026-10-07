@@ -1,0 +1,4 @@
+interface:
+  display_name: "Session Summarizer"
+  short_description: "Keep project handoffs concise and knowledge cumulative"
+  default_prompt: "Use $session-summarizer to merge this session's durable knowledge into the current project handoff, preserving pending work and removing superseded repetition."

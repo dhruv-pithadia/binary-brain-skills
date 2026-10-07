@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Initializer"
+  short_description: "Create project context files"
+  default_prompt: "Use $project-initializer to set up context files for this project."
