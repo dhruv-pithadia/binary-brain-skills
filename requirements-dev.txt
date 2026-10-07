@@ -1,1 +1,4 @@
 PyYAML==6.0.3
+prometheus-client==0.26.0
+pydantic==2.13.5
+email-validator==2.3.0

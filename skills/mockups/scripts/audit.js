@@ -145,7 +145,7 @@
     const box = (isCheck && el.closest('label')) || el;
     const r = box.getBoundingClientRect();
     const inline = el.tagName === 'A' && getComputedStyle(el).display === 'inline' && el.closest('p,li,span,td,dd');
-    if (!inline && (r.width < 24 || r.height < 24)) add('target-size', el, `${Math.round(r.width)}x${Math.round(r.height)}px, minimum 24x24`);
+    if (!inline && (r.width < 24 || r.height < 24)) add('target-size-preference', el, `${Math.round(r.width)}x${Math.round(r.height)}px; review spacing and WCAG exceptions before calling this a conformance failure`, 'warn');
     else if (touch && !inline && (r.width < 44 || r.height < 44)) add('target-size-touch', el, `${Math.round(r.width)}x${Math.round(r.height)}px on a phone, aim for 44`, 'warn');
     if (!accName(el)) {
       const isField = ['INPUT', 'SELECT', 'TEXTAREA'].includes(el.tagName);
@@ -176,11 +176,26 @@
   if (!document.querySelector('meta[name=viewport]')) add('no-viewport', null, 'missing viewport meta, phones will render it zoomed out');
   if (!document.title.trim()) add('no-title', null, 'empty title', 'warn');
 
-  let hasFocusRule = false;
+  // Static CSS inspection cannot establish visible keyboard focus. Browser defaults
+  // may be sufficient, and an outline reset may be replaced by another indicator.
+  let hasFocusRule = false, unreadableStyles = false, outlineReset = false;
+  const inspectRules = (rules) => {
+    for (const rule of rules) {
+      if (rule.selectorText && /:focus(-visible|-within)?\b/.test(rule.selectorText)) {
+        hasFocusRule = true;
+        if (rule.style && (rule.style.outlineStyle === 'none' || rule.style.outlineWidth === '0px')) outlineReset = true;
+      }
+      if (rule.cssRules) inspectRules(rule.cssRules);
+    }
+  };
   for (const sheet of document.styleSheets) {
-    try { for (const rule of sheet.cssRules) if (rule.selectorText && /:focus(-visible|-within)?\b/.test(rule.selectorText)) hasFocusRule = true; } catch (e) { hasFocusRule = true; }
+    try { inspectRules(sheet.cssRules); } catch { unreadableStyles = true; }
   }
-  if (!hasFocusRule) add('no-focus-style', null, 'no :focus-visible rule found; keyboard users cannot see where they are');
+  const focusDetail = outlineReset ? 'focus outline reset detected; confirm a visible replacement by keyboard' :
+    unreadableStyles ? 'some stylesheets cannot be inspected; verify focus visibility by keyboard' :
+    hasFocusRule ? 'focus selectors exist but visibility is unverified; check every control by keyboard' :
+    'no custom focus selector detected; browser-default indicators may be sufficient, verify by keyboard';
+  add('focus-review', null, focusDetail, 'warn');
 
   const pageBg = effectiveBg(document.body) || [255, 255, 255, 1];
   if (lum(pageBg) < 0.2 && !/dark/.test(getComputedStyle(document.documentElement).colorScheme)) {
