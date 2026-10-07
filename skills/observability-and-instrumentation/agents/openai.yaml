@@ -1,0 +1,4 @@
+interface:
+  display_name: "Observability and Instrumentation"
+  short_description: "Add logs, metrics, tracing, and alerts"
+  default_prompt: "Use $observability-and-instrumentation to add production-grade telemetry to this project."

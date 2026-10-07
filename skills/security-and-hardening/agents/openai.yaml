@@ -1,0 +1,4 @@
+interface:
+  display_name: "Security and Hardening"
+  short_description: "Harden auth, secrets, and deployments"
+  default_prompt: "Use $security-and-hardening to threat-model and harden this code before production."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Performance Optimization"
+  short_description: "Profile and fix real bottlenecks"
+  default_prompt: "Use $performance-optimization to profile this project, find the real bottleneck, and verify the fix."
