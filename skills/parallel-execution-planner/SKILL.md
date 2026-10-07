@@ -1,200 +1,71 @@
 ---
 name: parallel-execution-planner
-description: Use when turning a written implementation plan into coordinated multi-agent work, wave planning, or self-contained sub-agent prompts from project plans.
+description: Turn a written implementation plan into dependency-ordered execution waves and self-contained agent prompts. Use for planning parallel implementation, not for implementing the feature itself.
 ---
 
 # Parallel Execution Planner
 
-## Purpose
+Produce a saved execution document that a fresh orchestrator can use without reading the conversation. Preserve task boundaries and make dependencies, ownership, integration checks and runtime capacity explicit. Do not implement or dispatch agents as part of planning alone.
 
-Turn a written implementation plan into a multi-agent execution prompt document. The output is a saved Markdown prompt that an orchestrator agent can use to dispatch sub-agents wave by wave.
+## Establish inputs and destination
 
-Do not implement the feature while using this skill. Produce the execution prompt document only.
+Read the supplied plan in full. If no path is supplied, use an unambiguous current plan or ask for it. Inspect the repository only enough to resolve concrete paths, commands and conventions.
 
-## Inputs
+Use the user's output destination or the repository's existing prompt-document convention. If neither exists, save beside the source plan as `<plan-stem>-agent-prompts.md`. The `docs/superpowers/` layout is an example convention, not a requirement. Mark assumptions that affect execution.
 
-Expected usage:
+## Extract tasks and shared resources
 
-```text
-/parallel-execution-planner docs/superpowers/plans/<date>-<feature>.md
-```
+For each task record its ID, purpose, exact files, tests, inputs, outputs and dependencies. Include shared mutable resources as well as files: development ports, services, test databases, fixtures, external accounts, generated outputs and Git index/branch operations. Disjoint files alone do not establish safe parallelism.
 
-If the user gives a plan path, read that full file. If no path is given, ask for the plan path unless there is exactly one obvious current plan in the conversation.
+Define dependencies from:
 
-Save output to:
+- **Files:** agents cannot concurrently edit the same file. Merge ownership or serialize tasks.
+- **Contracts:** consumers follow the task creating their schema, API, types or other inputs.
+- **Resources:** isolate mutable services/data/ports or serialize access.
+- **Integration:** cross-component tests follow the implementation under test.
 
-```text
-docs/superpowers/prompts/<same-date>-<feature>-agent-prompt.md
-```
+Record a task-to-blockers graph. A cycle means the plan needs a joint sequential owner or a revised contract; explain the resolution instead of silently ignoring the dependency.
 
-Use the date and feature slug from the plan filename. For example:
+## Form execution waves
 
-```text
-docs/superpowers/plans/2026-06-11-tally-seed-package-import.md
-docs/superpowers/prompts/2026-06-11-tally-seed-package-import-agent-prompt.md
-```
+Place tasks with no unresolved blockers in the first wave, remove them, and repeat. Within each wave enforce exclusive file and mutable-resource ownership.
 
-## Workflow
+Respect the selected runtime's available agent slots, tool restrictions and the user's concurrency limits. Include the orchestrator in slot accounting when relevant. Do not hardcode an agent count. If capacity is unknown, provide logical waves with a serial fallback and instruct the orchestrator to schedule only as many owners as it can safely run.
 
-### 1. Read The Plan
+Split a large task only when the parts have clear ownership and handoff contracts. Shared-resource setup belongs to one owner before its consumers begin.
 
-Read the entire implementation plan. Extract each task into a working table:
+## Write the execution document
 
-- Task ID, such as `T1`, `T2`, or the plan's native numbering.
-- Task title.
-- Exact files created or modified.
-- Tests or verification commands mentioned.
-- Logical inputs from earlier tasks.
-- Outputs this task produces for later tasks, such as schema, API shape, model, parser contract, UI type, or migration.
+Add a `Copy Index` with `Copy ID`, `Prompt`, `Wave` and `Purpose`. Use stable IDs such as `ORCHESTRATOR`, `A1`, `A2`. Wrap each copyable prompt in a four-backtick fence, so embedded command fences remain valid, with matching `COPY START: <ID>` and `COPY END: <ID>` markers.
 
-If the plan omits exact paths, inspect the repo enough to infer concrete paths before writing the prompt. Mark assumptions explicitly in the orchestrator prompt.
-
-### 2. Build The Dependency Graph
-
-Use two dependency types:
-
-- **File conflict:** two tasks create or modify the same exact file. These tasks cannot be assigned to separate same-wave agents. Merge them into one agent or place them in sequential waves.
-- **Logical dependency:** Task B consumes an output from Task A. B must follow A even if files do not overlap.
-
-Common logical dependencies:
-
-- Database migration before models, services, or routes that rely on the new table.
-- Backend schema/API contract before frontend integration.
-- Parser/normalizer output before importer, validator, or UI result rendering.
-- Shared types/helpers before callers.
-- Tests that assert end-to-end behavior after the components under test exist.
-
-Represent the graph internally as `task -> blockers`.
-
-### 3. Group Into Waves
-
-Build waves with this algorithm:
-
-1. Wave 1 contains all tasks with no unresolved dependencies.
-2. Remove Wave 1 from the graph.
-3. Wave 2 contains tasks whose blockers are now complete.
-4. Repeat until every task is placed.
-
-Apply these constraints:
-
-- No two agents in the same wave may modify the same file.
-- Same-wave tasks with file conflicts must be merged into one agent.
-- Aim for 2-4 agents per wave.
-- If one wave has more than 4 independent tasks, split by ownership area, such as backend, frontend, tests, docs, migrations.
-- If a task is too large for one agent, split it only when the split produces independent file ownership and clear handoff contracts.
-
-If the graph has a cycle, identify the cycle, merge the involved tasks into one sequential agent, and explain why in the prompt.
-
-### 4. Write The Prompt Document
-
-Create a Markdown document with two main parts.
-
-Before Part A, add a `Copy Index` table so the user can distinguish and copy each prompt independently. The table must include:
-
-- `Copy ID`
-- `Prompt`
-- `Wave`
-- `Purpose`
-
-Use stable copy IDs:
-
-- `ORCHESTRATOR` for the orchestrator prompt.
-- `A1`, `A2`, `A3`, etc. for sub-agent prompts, matching wave/agent naming.
-
-Wrap every copyable prompt in a four-backtick fenced block with explicit copy markers:
-
-`````markdown
-````text
-COPY START: ORCHESTRATOR
-
-...orchestrator prompt text...
-
-COPY END: ORCHESTRATOR
-````
-`````
-
-For sub-agents, use the agent copy ID:
-
-`````markdown
-````text
-COPY START: A1
-
-...sub-agent prompt text...
-
-COPY END: A1
-````
-`````
-
-Use four backticks for the outer prompt block because the prompt text itself often contains triple-backtick command snippets. This keeps Markdown rendering clean and makes each prompt easy to copy.
-
-#### Part A: Orchestrator Prompt
+### Orchestrator prompt
 
 Include:
 
-- Role statement: the orchestrator coordinates sub-agents and integrates results.
-- Source plan path.
-- Output branch or repo assumptions if visible.
-- Codebase facts: stack, key paths, existing routes/services/components, conventions, test commands, and critical "already exists" warnings.
-- Wave execution order.
-- For each wave: agent names, task IDs, touched files, dependency notes, and integration checks.
-- Rules for the orchestrator:
-  - Dispatch only one wave at a time.
-  - Wait for all agents in a wave before starting the next wave.
-  - Run integration checks between waves when contracts change.
-  - Resolve file conflicts manually before continuing.
-  - Do not let agents edit files outside their assigned scope unless they report back first.
+- Objective, source plan and execution authorization boundaries.
+- Verified stack, commands, key paths, conventions and critical existing surfaces.
+- Runtime capacity assumptions and wave scheduling rules.
+- Wave/task ownership, blockers, shared-resource isolation and integration checks.
+- Checkout and branch ownership. Reuse a user/runtime-assigned task worktree; otherwise follow repository workflow. Do not switch another thread's branch or edit its checkout.
+- Commit ownership. In a shared checkout, only the orchestrator stages/commits after workers finish unless coordinated exclusive Git-index access is established. Alternatively assign separate worktrees and explain how their commits integrate. Independent PR tasks need explicit bases and dependencies.
+- Stop conditions: a failed contract/check blocks dependent waves; workers report uncertainty or ownership conflicts before expanding scope.
+- Cleanup ownership: stop only task-owned processes and retain valuable work; worktree or branch removal follows explicit cleanup authorization.
 
-#### Part B: Sub-Agent Prompts
+### Worker prompts
 
-Write one sub-agent prompt per agent. Each prompt must be fully self-contained and include:
+Each prompt contains its own relevant codebase facts, exact task IDs, permitted files/resources, required reads, implementation steps, test commands and expected evidence. Include what already exists and what must not be changed. State the assigned checkout, branch, port/data isolation and whether the worker may commit.
 
-- Role statement.
-- Relevant codebase facts subset.
-- Assigned task IDs and titles.
-- Exact files the agent may create or modify.
-- Files the agent should read first.
-- Step-by-step implementation instructions from the plan.
-- Hard constraints, including what not to touch.
-- Test or verification command.
-- Commit command for the agent's completed slice, if per-agent commits are intended.
-- Done criteria.
+Tell workers they are not alone, must accommodate other owners' changes, and must not revert them. Define the outputs handed to the next wave, unresolved assumptions and concrete done criteria. Do not rely on inherited conversation context or vague placeholders.
 
-Use concrete file paths and commands. Avoid placeholders such as `TODO`, `TBD`, `appropriate`, `similar`, or `etc.` in agent instructions.
+## Validate and save
 
-### 5. Self-Review Before Saving
+Check that:
 
-Before writing the final file, verify:
+- Every source task belongs to exactly one owner/wave.
+- Every dependency is satisfied before its consumer starts.
+- Same-wave agents have no overlapping files or unisolated mutable resources.
+- Runtime capacity and Git ownership are explicit.
+- Every prompt is self-contained, with matching copy markers and valid fences.
+- Integration checks cover changed contracts and there is a clear response to failure.
 
-- Every task from the source plan appears in exactly one wave.
-- Every task appears in exactly one sub-agent prompt.
-- No two agents in the same wave modify the same file.
-- Wave ordering satisfies all file-conflict and logical dependencies.
-- Every sub-agent prompt is self-contained.
-- The document includes a `Copy Index`.
-- Every copyable prompt has matching `COPY START: <ID>` and `COPY END: <ID>` markers.
-- Copyable prompt blocks use four-backtick fences so embedded command snippets render correctly.
-- Codebase facts cover non-obvious pitfalls and existing implementation surfaces.
-- The prompt document tells the orchestrator when to run tests and how to handle failed checks.
-
-After saving, run a quick text check against the prompt file:
-
-```bash
-rg -n "TODO|TBD|placeholder|later|fill in|appropriate|similar to" docs/superpowers/prompts/<filename>.md
-```
-
-The check should return no matches unless the words are quoted from the source plan and explicitly called out.
-
-### 6. Commit The Prompt
-
-After the prompt passes self-review:
-
-```bash
-git add docs/superpowers/prompts/<filename>.md
-git commit -m "docs: parallel execution prompt for <feature>"
-```
-
-If the user did not ask for commits in the current session, save the file and report the exact commit commands instead of running them.
-
-## Output Quality Bar
-
-The final prompt should let a fresh orchestrator agent execute the plan without rereading the full conversation. It must preserve task boundaries, make dependencies explicit, and prevent same-wave agents from colliding on files.
+Resolve vague commands or paths before saving. If needed information cannot be established, name it as an execution prerequisite instead of inventing it. Preserve the repository's publication rules: save and report the path; commit/push only when already authorized by the task.

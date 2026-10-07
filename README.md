@@ -26,7 +26,7 @@ skills/<skill-name>/
   agents/openai.yaml   Optional Codex metadata
 ```
 
-Existing Claude, Codex and shared copies were reconciled into this collection. Older versions, packaged skill archives and third-party installed skills are excluded. The engineering skills retain their existing examples; further reorganization can happen as their workflows evolve.
+Existing Claude, Codex and shared copies were reconciled into this collection. Older versions, packaged skill archives and third-party installed skills are excluded. The entrypoints hold shared decision rules; stack-specific examples and PR publication details live in selectively loaded references.
 
 ## Local use
 
@@ -40,9 +40,12 @@ Ask your agent to read the chosen `skills/<skill-name>/SKILL.md` to try a skill 
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 .venv/bin/python scripts/validate_skills.py
+.venv/bin/python tests/engineering_examples.py
+npm ci
 node --check skills/mockups/scripts/audit.js
 node --check skills/mockups/scripts/states.js
 node --check skills/mockups/scripts/run.mjs
+REQUIRE_CHROME=1 npm test
 ```
 
-CI runs structure, reference and JavaScript syntax checks. These checks do not establish that every example works on every stack or that skill behavior has been evaluated across both agents.
+CI runs structure, reference, JavaScript syntax, executable metric/schema examples and headless Chrome renderer regression checks. The renderer exits 1 on audit/script errors or incomplete screenshots, and 2 on invocation/rendering failures. Warnings require manual judgment, particularly keyboard focus and WCAG target-size exceptions. These checks do not establish that every example works on every stack or that skill behavior has been evaluated across both agents.
