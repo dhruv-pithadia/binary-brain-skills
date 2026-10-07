@@ -35,6 +35,7 @@ browserTest('captures long pages and preserves browser-default focus as manual r
   const r = await run(html('<button>View session</button>', 'main{min-height:4500px}'));
   assert.equal(r.code, 0, r.output);
   assert.match(r.output, /browser-default indicators may be sufficient/);
+  assert.doesNotMatch(r.output, /Cleanup warning/, 'normal shutdown must remove its temporary profile');
   const png = readFileSync(join(r.dir, 'shots/375.png'));
   assert.ok(png.readUInt32BE(20) > 4000, 'page must not silently crop at 4000px');
 });

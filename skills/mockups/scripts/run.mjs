@@ -58,20 +58,31 @@ async function ready() {
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   })()`);
 }
-async function cleanup() {
+let shutdownPromise;
+function cleanup() { return shutdownPromise ||= shutdown(); }
+async function shutdown() {
+  // Ask the browser to flush and close its child processes before terminating.
+  const graceful = ws?.readyState === WebSocket.OPEN;
+  if (graceful) await bounded(send('Browser.close'), 'Browser shutdown', 1500).catch(() => {});
   rejectPending(new Error('Renderer stopped'));
   ws?.close();
   if (chrome && chrome.exitCode === null && chrome.signalCode === null) {
     const exited = new Promise(resolve => chrome.once('exit', resolve));
-    chrome.kill('SIGTERM');
-    await bounded(exited, 'Chrome shutdown', 1500).catch(() => {});
+    if (graceful) await bounded(exited, 'Graceful Chrome shutdown', 1500).catch(() => {});
+    if (chrome.exitCode === null && chrome.signalCode === null) {
+      chrome.kill('SIGTERM');
+      await bounded(exited, 'Chrome shutdown', 1500).catch(() => {});
+    }
     if (chrome.exitCode === null && chrome.signalCode === null) {
       chrome.kill('SIGKILL');
       await bounded(exited, 'Chrome shutdown', 1500).catch(() => {});
     }
   }
   // Remove only the isolated browser profile created by this invocation.
-  if (profile && (!chrome || chrome.exitCode !== null || chrome.signalCode !== null)) rmSync(profile, { recursive: true, force: true });
+  if (profile && (!chrome || chrome.exitCode !== null || chrome.signalCode !== null)) {
+    try { rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); }
+    catch (error) { console.error(`Cleanup warning: temporary browser profile retained at ${profile}: ${error.code}`); }
+  }
 }
 for (const [signal, code] of [['SIGINT', 130], ['SIGTERM', 143]]) {
   process.once(signal, () => { cleanup().finally(() => process.exit(code)); });
