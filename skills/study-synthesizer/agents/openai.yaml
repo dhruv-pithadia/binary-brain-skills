@@ -1,0 +1,4 @@
+interface:
+  display_name: "Study Synthesizer"
+  short_description: "Turn course materials into a visual exam study guide"
+  default_prompt: "Use $study-synthesizer to turn the course materials in this folder into an exam-ready visual study guide PDF."
