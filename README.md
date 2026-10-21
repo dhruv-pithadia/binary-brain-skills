@@ -13,6 +13,7 @@ Practical agent skills for Claude Code and Codex, maintained as one shared colle
 | [Performance Optimization](skills/performance-optimization/SKILL.md) | Measure bottlenecks, improve frontend, backend and agent performance, and verify the result. |
 | [Observability and Instrumentation](skills/observability-and-instrumentation/SKILL.md) | Add structured logs, metrics, tracing, alerts and LLM workflow telemetry. |
 | [Security and Hardening](skills/security-and-hardening/SKILL.md) | Apply threat modeling and practical application, agent and deployment safeguards. |
+| [Study Synthesizer](skills/study-synthesizer/SKILL.md) | Turn a folder of course materials into an exam-ready visual study guide PDF, with diagrams, cases, mnemonics, model answers and an optional past-paper question bank. |
 
 ## One source for both agents
 

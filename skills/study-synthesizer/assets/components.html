@@ -1,0 +1,78 @@
+<!-- Study Synthesizer HTML components. Copy into section files (parts/NN_*.html).
+     Styles live in assets/study-guide.css. No <br> in body text; use separate elements. -->
+
+<!-- COVER (first part only) -->
+<section class="cover">
+  <div class="kicker">Institution · Programme · Course (Code)</div>
+  <h1>Course Exam Study Guide</h1>
+  <div class="sub">Units 1 to N: every concept, framework, case and number, in one flow for revision.</div>
+  <div class="units"><div><b>UNIT 1</b>Title</div><div><b>UNIT 2</b>Title</div></div>
+  <div class="foot">Sources: textbook (author, year) and the Unit 1–N lecture decks.</div>
+</section>
+
+<!-- UNIT OPENER + ONE-LINE IDEA -->
+<section class="unit">
+  <div class="unit-head"><div class="num">01</div><div><h1>Unit title</h1><div class="meta">Course outcomes: CO1 · CO5</div></div><span class="tier t1">TIER 1 · HIGH WEIGHT</span></div>
+  <div class="oneline"><b>In one line:</b> the whole unit in one sentence naming its central mechanism.</div>
+  <!-- unit content … -->
+</section>
+
+<!-- BOXES: key numbers / mnemonic / exam trap / added from slides / recall -->
+<div class="box key"><div class="t">Key numbers</div>…</div>
+<div class="box mnem"><div class="t">Mnemonic · "C-P-V-M"</div><div class="letters"><span><b>C</b>ustomer</span><span><b>P</b>ain point</span></div></div>
+<div class="box trap"><div class="t">Exam trap</div>…</div>
+<div class="box added"><div class="t">Added from slides · topic</div>…</div>
+<div class="box recall"><div class="t">60-second recall · Unit 1</div><ul class="check"><li>…</li></ul></div>
+
+<!-- FLOW (wraps automatically; colours: (default blue) teal orange red purple navy grey) -->
+<div class="flow">
+  <div class="s"><b>1 · Step</b>detail</div><div class="a">➜</div>
+  <div class="s teal"><b>2 · Step</b>detail</div><div class="a">➜</div>
+  <div class="s navy"><b>3 · Result</b>detail</div>
+</div>
+<div class="flowlabel">Caption: what to notice.</div>
+
+<!-- STACK (layers, write top layer first) -->
+<div class="stack">
+  <div class="layer" style="background:#FDEEDF"><div class="lab" style="background:#E07B26">LAYER 2</div><div class="body"><b>Top layer</b>: what it does.</div></div>
+  <div class="layer" style="background:#E6EEFB"><div class="lab" style="background:#1F3A5F">LAYER 1</div><div class="body"><b>Base layer</b>: what it does.</div></div>
+</div>
+
+<!-- 2x2 MATRIX -->
+<div class="pisano">
+  <div class="ax">Y AXIS:<br>NEW ↑</div>
+  <div class="cell" style="background:#FDEEDF;border:1.5px solid #E07B26"><b>Top-left</b>meaning · example</div>
+  <div class="cell" style="background:#FBE6E3;border:1.5px solid #C8483B"><b>Top-right</b>meaning · example</div>
+  <div class="ax">EXISTING ↓</div>
+  <div class="cell" style="background:#E6EEFB;border:1.5px solid #2E6FD8"><b>Bottom-left</b>meaning · example</div>
+  <div class="cell" style="background:#EEE8FA;border:1.5px solid #7A5AC8"><b>Bottom-right</b>meaning · example</div>
+  <div></div><div class="ax">X AXIS: EXISTING ←</div><div class="ax">→ NEW</div>
+</div>
+
+<!-- TIMELINE -->
+<div class="timeline">
+  <div class="era" style="background:#E6EEFB;border-top:4px solid #2E6FD8"><div class="yr">1858 – 1960s</div><h4>Era 1</h4>What changed.</div>
+  <div class="era" style="background:#EEE8FA;border-top:4px solid #7A5AC8"><div class="yr">1960s – 2000s</div><h4>Era 2</h4>What changed.</div>
+  <div class="era" style="background:#FDEEDF;border-top:4px solid #E07B26"><div class="yr">2000s – now</div><h4>Era 3</h4>What changed.</div>
+</div>
+
+<!-- CARDS (cases / categories): g2 g3 g4 grids; colour classes teal orange red purple navy -->
+<div class="g3">
+  <div class="card"><h4>Company (year)</h4>Problem → what they did → number → lesson.</div>
+  <div class="card teal"><h4>…</h4>…</div>
+  <div class="card orange"><h4>…</h4>…</div>
+</div>
+
+<!-- FIGURE (SVG from Graphviz / matplotlib, or a PNG from the image backend) -->
+<figure class="w80"><img src="../fig/diagram.svg"><figcaption>What to notice in this diagram.</figcaption></figure>
+
+<!-- FORMULA BOX -->
+<div class="formula">MDR = interchange + surcharge = 1.75% + 0.25% = 2.00%
+Merchant net = $100 × (1 − 2.61%) = $97.39</div>
+
+<!-- EXAM Q&A -->
+<div class="qa"><div class="q"><span class="marks">10 marks</span>Question text. <span class="co">CO1, CO3</span></div><div class="a">
+  <h4>1 · Framework</h4><p>…</p>
+  <h4>2 · Application</h4><ul><li>…</li></ul>
+  <p><b>Recommendation:</b> …</p>
+</div></div>
