@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const usage = 'usage: node run.mjs <file.html> [--widths 375,768,1280] [--out dir] [--timeout-ms 15000] [--max-height 12000] [--report-only]';
+const usage = 'usage: node run.mjs <file.html> [--widths 375,768,1280] [--out dir] [--timeout-ms 15000] [--startup-timeout-ms 30000] [--max-height 12000] [--report-only]';
 let chrome, ws, profile;
 const pending = new Map();
 const eventWaiters = new Set();
@@ -94,7 +94,7 @@ async function main() {
   for (let i = 2; i < process.argv.length; i++) {
     const arg = process.argv[i];
     if (arg === '--report-only') reportOnly = true;
-    else if (['--widths', '--out', '--timeout-ms', '--max-height'].includes(arg)) {
+    else if (['--widths', '--out', '--timeout-ms', '--startup-timeout-ms', '--max-height'].includes(arg)) {
       const value = process.argv[++i];
       if (!value || value.startsWith('--')) throw new Error(usage);
       options[arg] = value;
@@ -103,9 +103,10 @@ async function main() {
   }
   if (!file || !existsSync(file)) throw new Error(usage);
   timeoutMs = Number(options['--timeout-ms'] || 15000);
+  const startupTimeoutMs = Number(options['--startup-timeout-ms'] || 30000);
   const maxHeight = Number(options['--max-height'] || 12000);
   const widths = (options['--widths'] || '375,768,1280').split(',').map(Number);
-  if (![timeoutMs, maxHeight, ...widths].every(n => Number.isSafeInteger(n) && n > 0)) throw new Error('Widths, timeout and maximum height must be positive integers');
+  if (![timeoutMs, startupTimeoutMs, maxHeight, ...widths].every(n => Number.isSafeInteger(n) && n > 0)) throw new Error('Widths, timeouts and maximum height must be positive integers');
   const chromePath = [process.env.CHROME_PATH, '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/Applications/Chromium.app/Contents/MacOS/Chromium',
     '/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser'].find(p => p && existsSync(p));
   if (!chromePath) throw new Error('Chrome not found. Set CHROME_PATH, or use the in-page audit with the available browser.');
@@ -115,14 +116,16 @@ async function main() {
   const url = pathToFileURL(resolve(file)).href;
   profile = mkdtempSync(join(tmpdir(), 'mockup-chrome-'));
   let startupError;
-  chrome = spawn(chromePath, ['--headless=new', '--remote-debugging-port=0', '--remote-debugging-address=127.0.0.1', `--user-data-dir=${profile}`, '--no-first-run', '--hide-scrollbars', '--allow-file-access-from-files', 'about:blank'], { stdio: 'ignore' });
+  let startupDiagnostics = '';
+  chrome = spawn(chromePath, ['--headless=new', '--remote-debugging-port=0', '--remote-debugging-address=127.0.0.1', `--user-data-dir=${profile}`, '--no-first-run', '--hide-scrollbars', '--allow-file-access-from-files', 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] });
+  chrome.stderr.on('data', data => { startupDiagnostics = (startupDiagnostics + data.toString()).slice(-4096); });
   chrome.on('error', error => { startupError = error; rejectPending(error); });
   chrome.on('exit', () => rejectPending(new Error('Chrome exited before rendering completed')));
-  const deadline = Date.now() + timeoutMs;
+  const deadline = Date.now() + startupTimeoutMs;
   let socketUrl;
   while (Date.now() < deadline && !socketUrl) {
     if (startupError) throw startupError;
-    if (chrome.exitCode !== null || chrome.signalCode !== null) throw new Error('Chrome exited during startup');
+    if (chrome.exitCode !== null || chrome.signalCode !== null) throw new Error(`Chrome exited during startup${startupDiagnostics.trim() ? ': ' + startupDiagnostics.trim() : ''}`);
     try {
       const port = readFileSync(join(profile, 'DevToolsActivePort'), 'utf8').split('\n')[0];
       const tabs = await (await fetch(`http://127.0.0.1:${port}/json`, { signal: AbortSignal.timeout(Math.max(1, deadline - Date.now())) })).json();
@@ -130,7 +133,7 @@ async function main() {
     } catch { /* Browser may still be starting. */ }
     if (!socketUrl) await sleep(100);
   }
-  if (!socketUrl) throw new Error('Chrome startup timed out');
+  if (!socketUrl) throw new Error(`Chrome startup timed out after ${startupTimeoutMs}ms${startupDiagnostics.trim() ? ': ' + startupDiagnostics.trim() : ''}`);
   ws = new WebSocket(socketUrl);
   ws.addEventListener('close', () => rejectPending(new Error('Chrome connection closed')));
   ws.addEventListener('error', () => rejectPending(new Error('Chrome connection failed')));

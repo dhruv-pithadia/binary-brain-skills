@@ -1,0 +1,4 @@
+interface:
+  display_name: "Demo"
+  short_description: "Narrated reels with verified audio and timing"
+  default_prompt: "Use $demo to turn this topic into a narrated vertical reel suited to the actual target machine."

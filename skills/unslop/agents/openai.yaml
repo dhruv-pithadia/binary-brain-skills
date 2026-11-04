@@ -1,0 +1,4 @@
+interface:
+  display_name: "Unslop"
+  short_description: "Audit and refine existing screens without losing behavior"
+  default_prompt: "Use $unslop to audit this screen and make focused, verified visual improvements."

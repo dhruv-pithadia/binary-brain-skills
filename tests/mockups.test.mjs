@@ -19,13 +19,13 @@ async function run(source, args = [], env = {}) {
   let output = '';
   child.stdout.on('data', data => { output += data; });
   child.stderr.on('data', data => { output += data; });
-  const kill = setTimeout(() => child.kill('SIGTERM'), 25000);
+  const kill = setTimeout(() => child.kill('SIGTERM'), 70000);
   try {
     const code = await new Promise((resolve, reject) => { child.once('error', reject); child.once('exit', resolve); });
     return { code, output, dir };
   } finally { clearTimeout(kill); }
 }
-const browserTest = (name, fn) => test(name, { skip: !chrome, timeout: 30000 }, async () => {
+const browserTest = (name, fn) => test(name, { skip: !chrome, timeout: 75000 }, async () => {
   const results = [];
   try { await fn(async (...args) => { const r = await run(...args); results.push(r); return r; }); }
   finally { for (const r of results) rmSync(r.dir, { recursive: true, force: true }); }
@@ -38,6 +38,21 @@ browserTest('captures long pages and preserves browser-default focus as manual r
   assert.doesNotMatch(r.output, /Cleanup warning/, 'normal shutdown must remove its temporary profile');
   const png = readFileSync(join(r.dir, 'shots/375.png'));
   assert.ok(png.readUInt32BE(20) > 4000, 'page must not silently crop at 4000px');
+});
+browserTest('cold browser startup has a separate budget from page operations', async run => {
+  const dir = mkdtempSync(join(tmpdir(), 'mockup-cold-browser-'));
+  const launcher = join(dir, 'chrome');
+  const quotedChrome = "'" + chrome.replaceAll("'", "'\\''") + "'";
+  writeFileSync(launcher, `#!/bin/sh\nsleep 5.5\nexec ${quotedChrome} "$@"\n`);
+  chmodSync(launcher, 0o755);
+  try {
+    const started = Date.now();
+    const r = await run(html('<button>View session</button>'), ['--timeout-ms', '5000'], { CHROME_PATH: launcher });
+    assert.equal(r.code, 0, r.output);
+    assert.ok(Date.now() - started >= 5500, 'fixture must actually delay browser startup');
+    const png = readFileSync(join(r.dir, 'shots/375.png'));
+    assert.equal(png.readUInt32BE(16), 375, 'delayed browser must complete a real screenshot');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 browserTest('reports focus resets and small targets as qualified warnings', async run => {
   const r = await run(html('<button>View session</button>', 'button{min-width:0;min-height:0;width:20px;height:20px;font-size:6px}button:focus{outline:none}'));
@@ -91,4 +106,18 @@ test('early browser exit rejects startup without hanging', async () => {
   const r = await run(html('<p>Ready</p>'), [], { CHROME_PATH: fake });
   try { assert.equal(r.code, 2, r.output); assert.match(r.output, /Chrome exited during startup/); }
   finally { rmSync(r.dir, { recursive: true, force: true }); rmSync(dir, { recursive: true, force: true }); }
+});
+test('startup deadline remains bounded and includes browser diagnostics', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'mockup-stalled-browser-'));
+  const fake = join(dir, 'chrome');
+  writeFileSync(fake, '#!/bin/sh\necho "fixture startup diagnostic" >&2\nexec sleep 30\n');
+  chmodSync(fake, 0o755);
+  const started = Date.now();
+  const r = await run(html('<p>Ready</p>'), ['--startup-timeout-ms', '1000'], { CHROME_PATH: fake });
+  try {
+    assert.equal(r.code, 2, r.output);
+    assert.match(r.output, /Chrome startup timed out after 1000ms/);
+    assert.match(r.output, /fixture startup diagnostic/);
+    assert.ok(Date.now() - started < 6000, 'startup failure must not consume the page-operation deadline');
+  } finally { rmSync(r.dir, { recursive: true, force: true }); rmSync(dir, { recursive: true, force: true }); }
 });

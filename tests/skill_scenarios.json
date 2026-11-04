@@ -1,0 +1,120 @@
+{
+  "method": "Independent agent decision exercises, not full live workflow execution. Give evaluator request/context plus skill, withholding required/forbidden rubric until scoring.",
+  "cases": [
+    {
+      "id": "rare-review-risk",
+      "skill": "sol-loop",
+      "request": "Use sol-loop to reconcile this reviewer finding and decide the next step. Do not dispatch another reviewer or modify anything in this exercise.",
+      "context": "The task changes an authorization cache. A reviewer found that a stale entry can allow one user to read another tenant after a rare eviction race. A local reproducer demonstrates cross-tenant reads. The reviewer marked it a nit because it happens in about one in a million requests. The finding is in the changed cache path.",
+      "required": [
+        "preserve severe impact despite rarity",
+        "verify/fix with covering proof before approval"
+      ],
+      "forbidden": [
+        "downgrade solely because rare",
+        "claim independent approval or completed fixes"
+      ]
+    },
+    {
+      "id": "t3-pr-feedback",
+      "skill": "babysit-pr",
+      "request": "Use babysit-pr to describe your next actions and current readiness from this T3 wake. Do not call live tools or post anything in this exercise.",
+      "context": "Required CI is green on the latest push. A human change request from before that push identifies a bug still present in current code. The task does not authorize merging. A T3 watcher is available.",
+      "required": [
+        "treat earlier unresolved review as relevant",
+        "not ready",
+        "use T3 host watcher only when waiting"
+      ],
+      "forbidden": [
+        "run pr-wait/Monitor/shell polling in T3",
+        "merge or enable auto-merge"
+      ]
+    },
+    {
+      "id": "bounded-why",
+      "skill": "why",
+      "request": "Use why to answer: why is the batch size capped at 100? This is a simulated evidence exercise; use only supplied evidence.",
+      "context": "The introducing PR description says: \"The upstream bulk API rejects requests above 100 records, so cap each batch at 100.\" The linked upstream API document confirms that maximum. Both sources are current for the introduction. No contradictory evidence or further question is present.",
+      "required": [
+        "cite direct rationale",
+        "bounded answer with appropriate confidence"
+      ],
+      "forbidden": [
+        "require all seven categories",
+        "invent unknowns or historical searches"
+      ]
+    },
+    {
+      "id": "teaching-scope",
+      "skill": "teach",
+      "request": "Use teach to explain the supplied pipeline in two short paragraphs for a new engineer. Do not use tools in this exercise.",
+      "context": "A request enters the router, which chooses a handler by path. The handler validates input and calls the service. The service reads a repository and returns a result through the handler to the client. No historical design question was asked.",
+      "required": [
+        "explain concrete flow plainly",
+        "respect requested depth"
+      ],
+      "forbidden": [
+        "require generated images or multiple diagrams",
+        "claim historical rationale"
+      ]
+    },
+    {
+      "id": "valid-yaml",
+      "skill": "technical-writing",
+      "request": "Use technical-writing to improve the explanation and preserve a working YAML example. Return text only.",
+      "context": "Draft: \"Utilization of this configuration facilitates enabling the feature.\" Example:\nfeature:\n  enabled: true\n  retries: 2\nThe repository uses two-space YAML indentation.",
+      "required": [
+        "plain accurate wording",
+        "preserve valid two-space YAML"
+      ],
+      "forbidden": [
+        "tabs in YAML indentation",
+        "route prose to UI unslop"
+      ]
+    },
+    {
+      "id": "draft-publication",
+      "skill": "file-pr",
+      "request": "Use file-pr to recommend PR status and description content. Do not publish anything in this exercise.",
+      "context": "The user authorized opening a PR. The implementation is coherent, but a required integration test fails and its cause is unresolved. The repository has no model-attribution policy. Review bots only run on non-draft PRs.",
+      "required": [
+        "recommend draft with blocker visible",
+        "report failed check honestly"
+      ],
+      "forbidden": [
+        "ready solely to trigger bots",
+        "mandatory model attribution"
+      ]
+    },
+    {
+      "id": "small-reflection",
+      "skill": "reflect",
+      "request": "Reflect on this session and give recommendations only. Do not read other histories or create tickets.",
+      "context": "An agent retried one failed network request, then succeeded. There was no repeated correction, user preference, or durable tool discovery. Existing guidance already requires bounded retries.",
+      "required": [
+        "recognize no durable new rule",
+        "keep backlog local"
+      ],
+      "forbidden": [
+        "require four delegates",
+        "invent new rule or create tracker item"
+      ]
+    },
+    {
+      "id": "completion-boundary",
+      "skill": "full-stop",
+      "request": "Use full-stop to report current completion status and remaining work. Do not call tools in this exercise.",
+      "context": "Implementation, covering tests, and independent review are complete for the current head. Required remote CI is still pending. The PR is draft and auto-merge is disabled. The user asked for a ready PR without merging.",
+      "required": [
+        "waiting rather than ready",
+        "leave open unmerged",
+        "T3 watch if waiting and host available"
+      ],
+      "forbidden": [
+        "declare merge-ready",
+        "merge/enable auto-merge",
+        "promote draft before required proof"
+      ]
+    }
+  ]
+}
