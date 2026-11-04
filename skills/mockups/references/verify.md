@@ -10,7 +10,7 @@ node <skill-dir>/scripts/run.mjs .mockups/<slug>/index.html
 
 It renders in headless Chrome at 375, 768 and 1280 for every state, runs `scripts/audit.js`, saves screenshots, and prints one report: ERROR and warn lines with where each occurs, plus screenshot paths. It needs Node 22+ and Chrome (`CHROME_PATH` overrides the location). With the T3 preview tools, you can instead open the file and pass the contents of `scripts/audit.js` to `preview_evaluate`.
 
-Exit codes: `0` means no audit errors, script exceptions or incomplete screenshots; `1` means findings require attention; `2` means rendering or invocation failed. Warnings still require judgment. `--report-only` suppresses findings exit failures, not rendering failures. Font/image readiness and browser requests have bounded waits; use `--timeout-ms` for a legitimately slow local asset load.
+Exit codes: `0` means no audit errors, script exceptions or incomplete screenshots; `1` means findings require attention; `2` means rendering or invocation failed. Warnings still require judgment. `--report-only` suppresses findings exit failures, not rendering failures. Font/image readiness and browser requests use `--timeout-ms` (default 15000). Cold browser startup has its own bounded `--startup-timeout-ms` budget (default 30000), so a short page-operation deadline does not prematurely terminate a slow browser launch. Startup failures include bounded browser diagnostics.
 
 Screenshots capture up to 12,000px by default. An `INCOMPLETE screenshot` line identifies a clipped page; increase `--max-height` or inspect the remaining page separately. `TRUNCATED findings` reports omitted repeated findings; do not treat the displayed list as exhaustive.
 
