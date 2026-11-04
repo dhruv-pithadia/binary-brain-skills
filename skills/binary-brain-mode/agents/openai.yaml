@@ -1,0 +1,6 @@
+interface:
+  display_name: "Binary Brain mode"
+  short_description: "Work with system context and concrete verification"
+  default_prompt: "Use $binary-brain-mode to finish this task with system context and concrete verification."
+policy:
+  allow_implicit_invocation: false

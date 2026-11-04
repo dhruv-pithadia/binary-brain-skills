@@ -1,0 +1,4 @@
+interface:
+  display_name: "SEO"
+  short_description: "Diagnose and fix evidence-backed organic-search issues"
+  default_prompt: "Use $seo to audit this site's search visibility and fix confirmed issues within scope."
